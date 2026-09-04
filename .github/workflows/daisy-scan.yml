@@ -1,0 +1,26 @@
+name: Tu dong quet YouTube 48 lan moi ngay (Moi 30 phut)
+
+on:
+  schedule:
+    # Chay moi 30 phut 1 lan (48 lan/ngay)
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Cho phep ban bam nut chay thu cong bat cu luc nao
+
+jobs:
+  daily-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tai ma nguon tu GitHub
+        uses: actions/checkout@v4
+
+      - name: Cai dat moi truong Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Cai dat cac thu vien can thiet
+        run: npm ci
+
+      - name: Chay chuong trinh quet YouTube va cap nhat Firestore
+        run: npx tsx scripts/dailyScan.ts
