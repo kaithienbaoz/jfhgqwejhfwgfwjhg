@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidChannel(data) {
+      return data.keys().hasAll(['id', 'title', 'status'])
+          && data.id is string
+          && data.title is string && data.title.size() <= 500
+          && data.status in ["ON", "WAITING", "OFF"]
+          && (data.get('addedAt', 0) is number)
+          && (data.get('history', []) is list)
+          && (data.get('viewHistory', []) is list);
+    }
+
+    match /channels/{channelId} {
+      // Public access as requested "không cần login hay gì cả"
+      allow read: if true;
+      allow create: if isValidId(channelId) && isValidChannel(request.resource.data);
+      allow update: if isValidChannel(request.resource.data)
+                    && request.resource.data.id == resource.data.id;
+      allow delete: if true;
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isValidId(settingId);
+    }
+  }
+}

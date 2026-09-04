@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "YouTubeChannel": {
+      "title": "YouTube Channel",
+      "description": "Information about a tracked YouTube channel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "subscriberCount": { "type": "string" },
+        "videoCount": { "type": "string" },
+        "viewCount": { "type": "string" },
+        "customUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["ON", "WAITING", "OFF"] },
+        "addedAt": { "type": "number" },
+        "lastVideoPublishedAt": { "type": "string" },
+        "topic": { "type": "string" },
+        "note": { "type": "string" },
+        "notFoundOnYouTube": { "type": "boolean" },
+        "history": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "viewHistory": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["id", "title", "status"]
+    },
+    "AppSettings": {
+      "title": "App Settings",
+      "description": "Global application settings shared across devices",
+      "type": "object",
+      "properties": {
+        "apiKeys": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "usageCount": { "type": "number" },
+              "isExpired": { "type": "boolean" },
+              "lastResetDate": { "type": "string" }
+            }
+          } 
+        },
+        "lastUsedIndex": { "type": "number" },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/channels/{channelId}": {
+      "schema": "YouTubeChannel",
+      "description": "Tracked YouTube channels shared across devices"
+    },
+    "/settings/{settingId}": {
+      "schema": "AppSettings",
+      "description": "Global settings like API keys"
+    }
+  }
+}
