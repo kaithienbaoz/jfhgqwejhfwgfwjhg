@@ -19,10 +19,14 @@ const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
-// Định dạng ngày DD-MM-YYYY
+// Định dạng ngày DD-MM-YYYY theo múi giờ Việt Nam (Asia/Ho_Chi_Minh)
 const formatDate = (timestamp: number) => {
-  const d = new Date(timestamp);
-  return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`;
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date(timestamp)).split("/").join("-");
 };
 
 // Hàm gọi API YouTube
@@ -146,7 +150,7 @@ async function runDailyScan() {
         const isSameDay = lastEntry ? formatDate(lastEntry.timestamp) === todayStr : false;
 
         if (isSameDay && lastEntry) {
-          // Chốt điểm cuối của ngày (24:00)
+          // Chốt điểm cuối của ngày
           currentViewHistory[currentViewHistory.length - 1] = {
             viewCount: newViewCount,
             videoCount: newVideoCount,
@@ -196,14 +200,28 @@ async function runDailyScan() {
       }
     }
 
-    // 4. Lưu lại thông số settings vào Firestore
+    // 4. Lưu lại thông số settings vào Firestore (Kèm nhật ký GitHub Actions)
     const newDailyScanCount = (settings.lastScanDate === todayStr ? (settings.dailyScanCount || 0) : 0) + 1;
+    const nowScanTime = Date.now();
+    const oneDayAgo = nowScanTime - (24 * 60 * 60 * 1000);
+    const prevScans = Array.isArray(settings.recentScans) ? settings.recentScans : [];
+    const filteredScans = prevScans.filter((s: any) => s && typeof s.timestamp === 'number' && s.timestamp >= oneDayAgo);
+    
+    // Ghi nhận lượt quét thành công từ GitHub Actions
+    filteredScans.unshift({
+      timestamp: nowScanTime,
+      channelCount: channels.length,
+      status: "success",
+      trigger: "github_action"
+    });
+
     await updateDoc(doc(db, "settings", "global"), {
       apiKeys: apiKeys,
       lastUsedIndex: workingIndex,
-      lastCronCompletion: Date.now(),
+      lastCronCompletion: nowScanTime,
       dailyScanCount: newDailyScanCount,
-      lastScanDate: todayStr
+      lastScanDate: todayStr,
+      recentScans: filteredScans.slice(0, 55)
     });
 
     console.log(`=====================================================`);
